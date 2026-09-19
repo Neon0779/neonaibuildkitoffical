@@ -2,488 +2,564 @@
 
 import { useState } from "react";
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 export default function Home() {
-  const [showBuy, setShowBuy] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const loadRazorpay = () =>
+    new Promise<boolean>((resolve) => {
+      if (window.Razorpay) {
+        resolve(true);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+
+  async function startPayment() {
+    try {
+      setLoading(true);
+      setMessage("");
+
+      const loaded = await loadRazorpay();
+
+      if (!loaded) {
+        throw new Error("Razorpay checkout could not load.");
+      }
+
+      const response = await fetch("/api/razorpay/order", {
+        method: "POST",
+      });
+
+      const order = await response.json();
+
+      if (!response.ok || !order.id) {
+        throw new Error(order.error || "Could not create payment order.");
+      }
+
+      const razorpay = new window.Razorpay({
+        key: order.key,
+        amount: order.amount,
+        currency: order.currency,
+        name: "NEON LABS",
+        description: "NEON AI Build Kit",
+        order_id: order.id,
+
+        handler: function () {
+          setMessage(
+            "Test payment received. Secure payment verification is the next activation step."
+          );
+        },
+
+        theme: {
+          color: "#39dfff",
+        },
+
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          },
+        },
+      });
+
+      razorpay.on("payment.failed", function () {
+        setMessage("Payment failed. Please try again.");
+        setLoading(false);
+      });
+
+      razorpay.open();
+      setLoading(false);
+    } catch (error) {
+      console.error(error);
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to start payment. Please try again."
+      );
+      setLoading(false);
+    }
+  }
 
   return (
-    <main style={styles.page}>
-      <nav style={styles.nav}>
-        <div style={styles.logo}>
-          NEON<span style={{ color: "#38e8ff" }}> LABS</span>
+    <main className="page">
+      <nav>
+        <div className="logo">
+          NEON <span>LABS</span>
         </div>
-        <div style={styles.badge}>ANDROID AI BUILD KIT</div>
+        <div className="navBadge">ANDROID AI BUILD KIT</div>
       </nav>
 
-      <section style={styles.hero}>
-        <div style={styles.pill}>⚡ LAUNCH OFFER • ₹99</div>
+      <section className="hero">
+        <div className="offer">⚡ LAUNCH OFFER • ₹99</div>
 
-        <h1 style={styles.title}>
+        <h1>
           BUILD YOUR OWN
           <br />
-          <span style={styles.gradient}>ANDROID AI ASSISTANT</span>
+          ANDROID <span>AI ASSISTANT</span>
         </h1>
 
-        <p style={styles.subtitle}>
+        <p className="subtitle">
           Turn your Android phone into your own personalized AI assistant.
           Choose its name, personality, voice, theme and language — then follow
           the guided build workflow.
         </p>
 
-        <div style={styles.buttons}>
-          <button style={styles.primary} onClick={() => setShowBuy(true)}>
-            GET NEON AI KIT — ₹99 →
+        <div className="actions">
+          <button
+            className="buy"
+            onClick={startPayment}
+            disabled={loading}
+          >
+            {loading ? "STARTING PAYMENT..." : "GET NEON AI KIT — ₹99"}
           </button>
 
-          <a href="#features" style={styles.secondary}>
+          <a className="secondary" href="#features">
             EXPLORE FEATURES
           </a>
         </div>
 
-        <p style={styles.small}>
+        <div className="mini">
           No coding expertise required • Android + Termux • Guided step-by-step
+        </div>
+
+        {message && <div className="message">{message}</div>}
+
+        <div className="core">
+          <div className="coreInner">N</div>
+        </div>
+      </section>
+
+      <section className="section" id="features">
+        <div className="eyebrow">YOUR ASSISTANT. YOUR RULES.</div>
+        <h2>One kit. Your own AI identity.</h2>
+
+        <p className="sectionIntro">
+          NEON AI Build Kit guides you through building a personalized Android
+          AI assistant instead of locking you into one fixed assistant name.
         </p>
-      </section>
 
-      <section style={styles.core}>
-        <div style={styles.orb}>
-          <div style={styles.orbInner}>N</div>
-        </div>
-
-        <div style={styles.status}>● AI CORE ONLINE</div>
-        <h2 style={styles.coreTitle}>Your AI. Your Identity.</h2>
-        <p style={styles.coreText}>
-          Create an assistant designed around you instead of using a fixed
-          identity.
-        </p>
-      </section>
-
-      <section id="features" style={styles.section}>
-        <p style={styles.eyebrow}>WHAT YOU GET</p>
-        <h2 style={styles.heading}>One kit. Complete build journey.</h2>
-
-        <div style={styles.grid}>
-          {[
-            ["01", "Personalized AI", "Choose your assistant name and personality."],
-            ["02", "Voice Experience", "Configure your preferred male or female voice."],
-            ["03", "Termux Build", "Follow exact commands and verified build stages."],
-            ["04", "Android Actions", "Build toward useful phone actions with permissions."],
-            ["05", "Memory System", "Create structured assistant memory and preferences."],
-            ["06", "Premium Interface", "Build a futuristic assistant UI with an AI core."],
-          ].map(([num, title, text]) => (
-            <article style={styles.card} key={num}>
-              <span style={styles.number}>{num}</span>
-              <h3 style={styles.cardTitle}>{title}</h3>
-              <p style={styles.cardText}>{text}</p>
-            </article>
-          ))}
+        <div className="grid">
+          <Card
+            icon="✦"
+            title="Custom Assistant"
+            text="Choose your own assistant name, personality and conversation style."
+          />
+          <Card
+            icon="◉"
+            title="Voice Preference"
+            text="Choose female, male or no preference depending on the voice provider you use."
+          />
+          <Card
+            icon="⌁"
+            title="Android + Termux"
+            text="Follow exact commands and checkpoints while building directly with your Android workflow."
+          />
+          <Card
+            icon="◆"
+            title="Master Prompt"
+            text="Start a structured AI-guided build workflow instead of relying on random coding instructions."
+          />
+          <Card
+            icon="✓"
+            title="Stage Verification"
+            text="Verify each build stage before moving forward so errors can be fixed early."
+          />
+          <Card
+            icon="⚙"
+            title="Future Ready"
+            text="A modular foundation for memory, voice, Android actions, wake features and more."
+          />
         </div>
       </section>
 
-      <section style={styles.workflow}>
-        <p style={styles.eyebrow}>HOW IT WORKS</p>
-        <h2 style={styles.heading}>From ₹99 to your own AI build.</h2>
+      <section className="workflow">
+        <div className="eyebrow">HOW IT WORKS</div>
+        <h2>From idea to your Android AI assistant.</h2>
 
-        <div style={styles.steps}>
-          <div style={styles.step}><b>1</b><span>Get the Build Kit</span></div>
-          <div style={styles.line} />
-          <div style={styles.step}><b>2</b><span>Unlock Buyer Dashboard</span></div>
-          <div style={styles.line} />
-          <div style={styles.step}><b>3</b><span>Customize Your Assistant</span></div>
-          <div style={styles.line} />
-          <div style={styles.step}><b>4</b><span>Copy Master Prompt</span></div>
-          <div style={styles.line} />
-          <div style={styles.step}><b>5</b><span>Start Guided Build</span></div>
+        <div className="steps">
+          <Step n="01" title="Get the Kit" text="Start with the ₹99 launch-access checkout." />
+          <Step n="02" title="Personalize" text="Choose your assistant name, personality, voice, theme and language." />
+          <Step n="03" title="Use the Master Prompt" text="Paste your personalized prompt into a capable coding AI." />
+          <Step n="04" title="Build Stage-by-Stage" text="Follow Termux commands, verification checkpoints and troubleshooting." />
         </div>
       </section>
 
-      <section style={styles.cta}>
+      <section className="cta">
         <div>
-          <p style={styles.eyebrow}>LAUNCH ACCESS</p>
-          <h2 style={styles.ctaTitle}>Start building your AI assistant.</h2>
-          <p style={styles.oldPrice}>₹499</p>
-          <div style={styles.price}>₹99</div>
-          <p style={styles.once}>Launch price</p>
-
-          <button style={styles.primary} onClick={() => setShowBuy(true)}>
-            BUY NOW — ₹99 →
-          </button>
+          <div className="eyebrow">LAUNCH ACCESS</div>
+          <h2>Build something that is yours.</h2>
+          <p>Start the NEON AI guided Android assistant build workflow.</p>
         </div>
+
+        <button className="buy big" onClick={startPayment} disabled={loading}>
+          {loading ? "STARTING..." : "GET ACCESS — ₹99"}
+        </button>
       </section>
 
-      <footer style={styles.footer}>
-        <strong>NEON LABS</strong>
-        <span>Build AI • Build Apps • Build the Future</span>
-        <span>© 2026 NEON LABS</span>
+      <footer>
+        <div>© 2026 NEON LABS</div>
+        <div>Build AI • Build Apps • Build the Future</div>
       </footer>
 
-      {showBuy && (
-        <div style={styles.overlay} onClick={() => setShowBuy(false)}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => setShowBuy(false)}
-              style={styles.close}
-            >
-              ×
-            </button>
+      <style jsx>{`
+        * {
+          box-sizing: border-box;
+        }
 
-            <div style={styles.modalIcon}>N</div>
-            <p style={styles.eyebrow}>NEON AI BUILD KIT</p>
-            <h2 style={styles.modalTitle}>Get Launch Access</h2>
+        .page {
+          min-height: 100vh;
+          background:
+            radial-gradient(circle at 50% 15%, rgba(26, 179, 255, 0.12), transparent 32%),
+            radial-gradient(circle at 80% 55%, rgba(80, 55, 255, 0.08), transparent 30%),
+            #02070b;
+          color: #f4fbff;
+          font-family: Arial, Helvetica, sans-serif;
+          overflow: hidden;
+        }
 
-            <div style={styles.modalPrice}>₹99</div>
+        nav {
+          width: min(1180px, calc(100% - 40px));
+          margin: auto;
+          height: 82px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid rgba(121, 220, 255, 0.12);
+        }
 
-            <p style={styles.modalText}>
-              Secure payment activation is being connected. Your purchase will
-              unlock the protected Buyer Dashboard and personalized Master
-              Prompt.
-            </p>
+        .logo {
+          font-weight: 900;
+          letter-spacing: 4px;
+          font-size: 14px;
+        }
 
-            <button style={styles.disabled}>
-              PAYMENT SETUP IN PROGRESS
-            </button>
-          </div>
-        </div>
-      )}
+        .logo span,
+        h1 span {
+          color: #3ddcff;
+        }
+
+        .navBadge,
+        .eyebrow {
+          color: #8aa1ae;
+          letter-spacing: 2px;
+          font-size: 10px;
+          font-weight: 800;
+        }
+
+        .hero {
+          width: min(1050px, calc(100% - 36px));
+          margin: auto;
+          padding: 90px 0 55px;
+          text-align: center;
+          position: relative;
+        }
+
+        .offer {
+          display: inline-block;
+          padding: 9px 16px;
+          border: 1px solid rgba(61, 220, 255, 0.28);
+          border-radius: 100px;
+          color: #6ee8ff;
+          background: rgba(61, 220, 255, 0.06);
+          font-size: 11px;
+          letter-spacing: 1.5px;
+          font-weight: 800;
+        }
+
+        h1 {
+          margin: 30px auto 20px;
+          font-size: clamp(42px, 8vw, 82px);
+          line-height: 0.98;
+          letter-spacing: -3px;
+          font-weight: 950;
+        }
+
+        .subtitle {
+          width: min(720px, 100%);
+          margin: 0 auto;
+          color: #93a4ae;
+          line-height: 1.8;
+          font-size: 15px;
+        }
+
+        .actions {
+          display: flex;
+          justify-content: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          margin-top: 32px;
+        }
+
+        button,
+        .secondary {
+          border: 0;
+          border-radius: 8px;
+          min-height: 50px;
+          padding: 0 24px;
+          font-weight: 900;
+          font-size: 12px;
+          letter-spacing: 0.4px;
+          cursor: pointer;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .buy {
+          color: #001015;
+          background: linear-gradient(135deg, #6cecff, #24c9f4);
+          box-shadow: 0 0 34px rgba(52, 215, 255, 0.2);
+        }
+
+        .buy:disabled {
+          opacity: 0.6;
+          cursor: wait;
+        }
+
+        .secondary {
+          color: #c8d8df;
+          border: 1px solid #18303a;
+          background: #071016;
+        }
+
+        .mini {
+          margin-top: 17px;
+          color: #536771;
+          font-size: 10px;
+        }
+
+        .message {
+          width: min(620px, 100%);
+          margin: 22px auto 0;
+          padding: 14px 18px;
+          border: 1px solid rgba(61, 220, 255, 0.22);
+          border-radius: 10px;
+          background: rgba(61, 220, 255, 0.06);
+          color: #a9edf8;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+
+        .core {
+          width: 150px;
+          height: 150px;
+          margin: 70px auto 0;
+          padding: 1px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #38e4ff, #315bff, #9d3cff);
+          box-shadow: 0 0 65px rgba(47, 205, 255, 0.25);
+        }
+
+        .coreInner {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: radial-gradient(circle, #102b39, #03090d 68%);
+          font-size: 48px;
+          font-weight: 900;
+          color: #63e9ff;
+        }
+
+        .section,
+        .workflow {
+          width: min(1120px, calc(100% - 36px));
+          margin: auto;
+          padding: 100px 0;
+        }
+
+        .section h2,
+        .workflow h2,
+        .cta h2 {
+          margin: 12px 0;
+          font-size: clamp(32px, 5vw, 54px);
+          letter-spacing: -2px;
+        }
+
+        .sectionIntro {
+          max-width: 700px;
+          color: #7f929d;
+          line-height: 1.8;
+        }
+
+        .grid {
+          margin-top: 45px;
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 14px;
+        }
+
+        .card {
+          min-height: 205px;
+          padding: 28px;
+          border: 1px solid #102832;
+          border-radius: 16px;
+          background: linear-gradient(145deg, rgba(10, 24, 31, 0.9), rgba(4, 10, 14, 0.92));
+        }
+
+        .cardIcon {
+          font-size: 25px;
+          color: #4be1ff;
+        }
+
+        .card h3 {
+          margin: 22px 0 10px;
+          font-size: 18px;
+        }
+
+        .card p,
+        .step p,
+        .cta p {
+          color: #81949e;
+          line-height: 1.7;
+          font-size: 13px;
+        }
+
+        .workflow {
+          border-top: 1px solid #0d2028;
+        }
+
+        .steps {
+          margin-top: 45px;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 12px;
+        }
+
+        .step {
+          padding: 26px 22px;
+          border-left: 1px solid #1c4655;
+        }
+
+        .stepNum {
+          color: #41dcff;
+          font-weight: 900;
+          font-size: 12px;
+        }
+
+        .step h3 {
+          margin: 16px 0 8px;
+        }
+
+        .cta {
+          width: min(1120px, calc(100% - 36px));
+          margin: 30px auto 90px;
+          padding: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 30px;
+          border: 1px solid #153540;
+          border-radius: 22px;
+          background:
+            radial-gradient(circle at 90% 50%, rgba(44, 208, 255, 0.12), transparent 35%),
+            #061016;
+        }
+
+        .big {
+          min-width: 210px;
+        }
+
+        footer {
+          width: min(1120px, calc(100% - 36px));
+          margin: auto;
+          padding: 28px 0 45px;
+          border-top: 1px solid #10232b;
+          display: flex;
+          justify-content: space-between;
+          gap: 20px;
+          color: #52646d;
+          font-size: 11px;
+        }
+
+        @media (max-width: 800px) {
+          nav {
+            height: 68px;
+          }
+
+          .navBadge {
+            font-size: 8px;
+          }
+
+          .hero {
+            padding-top: 65px;
+          }
+
+          h1 {
+            letter-spacing: -2px;
+          }
+
+          .grid {
+            grid-template-columns: 1fr;
+          }
+
+          .steps {
+            grid-template-columns: 1fr;
+          }
+
+          .cta {
+            padding: 30px 22px;
+            flex-direction: column;
+            align-items: flex-start;
+          }
+
+          .big {
+            width: 100%;
+          }
+
+          footer {
+            flex-direction: column;
+          }
+        }
+      `}</style>
     </main>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background:
-      "radial-gradient(circle at 50% 10%, #08263a 0%, #03080e 32%, #010305 70%)",
-    color: "#f5fbff",
-    fontFamily: "Arial, Helvetica, sans-serif",
-  },
+function Card({
+  icon,
+  title,
+  text,
+}: {
+  icon: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="card">
+      <div className="cardIcon">{icon}</div>
+      <h3>{title}</h3>
+      <p>{text}</p>
+    </div>
+  );
+}
 
-  nav: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "22px 6%",
-    borderBottom: "1px solid rgba(255,255,255,.08)",
-  },
-
-  logo: {
-    fontSize: "20px",
-    fontWeight: 900,
-    letterSpacing: "2px",
-  },
-
-  badge: {
-    fontSize: "10px",
-    letterSpacing: "1.5px",
-    color: "#8ea4b3",
-  },
-
-  hero: {
-    minHeight: "75vh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center",
-    textAlign: "center",
-    padding: "70px 6%",
-  },
-
-  pill: {
-    border: "1px solid rgba(56,232,255,.35)",
-    background: "rgba(56,232,255,.07)",
-    color: "#62efff",
-    borderRadius: "100px",
-    padding: "9px 15px",
-    fontSize: "11px",
-    letterSpacing: "1px",
-    marginBottom: "28px",
-  },
-
-  title: {
-    fontSize: "clamp(42px,8vw,90px)",
-    lineHeight: ".95",
-    letterSpacing: "-4px",
-    maxWidth: "1100px",
-    margin: 0,
-    fontWeight: 900,
-  },
-
-  gradient: {
-    background: "linear-gradient(90deg,#ffffff,#35e8ff,#587bff)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-  },
-
-  subtitle: {
-    maxWidth: "720px",
-    color: "#9eb0bd",
-    fontSize: "17px",
-    lineHeight: 1.7,
-    margin: "30px auto",
-  },
-
-  buttons: {
-    display: "flex",
-    gap: "12px",
-    flexWrap: "wrap",
-    justifyContent: "center",
-  },
-
-  primary: {
-    border: 0,
-    background: "#35e8ff",
-    color: "#001016",
-    padding: "17px 24px",
-    borderRadius: "10px",
-    fontWeight: 900,
-    cursor: "pointer",
-  },
-
-  secondary: {
-    border: "1px solid #263844",
-    color: "#dceaf1",
-    padding: "16px 24px",
-    borderRadius: "10px",
-    textDecoration: "none",
-    fontWeight: 700,
-  },
-
-  small: {
-    color: "#5f7684",
-    fontSize: "12px",
-    marginTop: "22px",
-  },
-
-  core: {
-    textAlign: "center",
-    padding: "50px 6% 100px",
-  },
-
-  orb: {
-    width: "150px",
-    height: "150px",
-    margin: "0 auto 30px",
-    borderRadius: "50%",
-    padding: "2px",
-    background: "linear-gradient(135deg,#35e8ff,#295cff,#9b46ff)",
-    boxShadow: "0 0 70px rgba(53,232,255,.25)",
-  },
-
-  orbInner: {
-    width: "100%",
-    height: "100%",
-    borderRadius: "50%",
-    background: "radial-gradient(circle at 35% 30%,#183d52,#02060a 65%)",
-    display: "grid",
-    placeItems: "center",
-    fontSize: "48px",
-    fontWeight: 900,
-    color: "#53edff",
-  },
-
-  status: {
-    color: "#4deaff",
-    fontSize: "10px",
-    letterSpacing: "2px",
-  },
-
-  coreTitle: {
-    fontSize: "34px",
-    marginBottom: "10px",
-  },
-
-  coreText: {
-    color: "#8195a3",
-  },
-
-  section: {
-    padding: "90px 6%",
-    maxWidth: "1200px",
-    margin: "auto",
-  },
-
-  eyebrow: {
-    color: "#44eaff",
-    fontSize: "11px",
-    letterSpacing: "2px",
-    fontWeight: 800,
-  },
-
-  heading: {
-    fontSize: "clamp(32px,5vw,55px)",
-    margin: "10px 0 45px",
-    letterSpacing: "-2px",
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))",
-    gap: "14px",
-  },
-
-  card: {
-    border: "1px solid #142530",
-    borderRadius: "16px",
-    padding: "28px",
-    background: "rgba(7,16,23,.8)",
-  },
-
-  number: {
-    color: "#3ceaff",
-    fontSize: "12px",
-  },
-
-  cardTitle: {
-    fontSize: "20px",
-    marginTop: "28px",
-  },
-
-  cardText: {
-    color: "#8194a1",
-    lineHeight: 1.6,
-  },
-
-  workflow: {
-    padding: "100px 6%",
-    textAlign: "center",
-  },
-
-  steps: {
-    maxWidth: "700px",
-    margin: "auto",
-  },
-
-  step: {
-    display: "flex",
-    gap: "18px",
-    alignItems: "center",
-    border: "1px solid #142832",
-    background: "#061016",
-    padding: "20px",
-    borderRadius: "12px",
-    textAlign: "left",
-  },
-
-  line: {
-    width: "1px",
-    height: "18px",
-    background: "#1f6472",
-    margin: "0 0 0 29px",
-  },
-
-  cta: {
-    margin: "60px 6%",
-    padding: "70px 25px",
-    borderRadius: "25px",
-    border: "1px solid rgba(54,230,255,.25)",
-    background:
-      "radial-gradient(circle at center,rgba(27,107,138,.28),rgba(3,8,13,.9))",
-    textAlign: "center",
-  },
-
-  ctaTitle: {
-    fontSize: "clamp(30px,5vw,55px)",
-    margin: "10px",
-  },
-
-  oldPrice: {
-    color: "#627681",
-    textDecoration: "line-through",
-    marginBottom: 0,
-  },
-
-  price: {
-    fontSize: "70px",
-    fontWeight: 900,
-    color: "#48ebff",
-  },
-
-  once: {
-    color: "#8095a0",
-    marginTop: "-5px",
-    marginBottom: "25px",
-  },
-
-  footer: {
-    display: "flex",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: "15px",
-    color: "#637985",
-    borderTop: "1px solid #101e25",
-    padding: "35px 6%",
-    fontSize: "12px",
-  },
-
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,.82)",
-    backdropFilter: "blur(12px)",
-    display: "grid",
-    placeItems: "center",
-    padding: "20px",
-    zIndex: 100,
-  },
-
-  modal: {
-    width: "100%",
-    maxWidth: "430px",
-    background: "#061016",
-    border: "1px solid #1c5663",
-    borderRadius: "22px",
-    padding: "35px",
-    textAlign: "center",
-    position: "relative",
-    boxShadow: "0 0 80px rgba(44,220,255,.15)",
-  },
-
-  close: {
-    position: "absolute",
-    right: "18px",
-    top: "14px",
-    border: 0,
-    background: "transparent",
-    color: "#91a8b5",
-    fontSize: "28px",
-    cursor: "pointer",
-  },
-
-  modalIcon: {
-    width: "65px",
-    height: "65px",
-    borderRadius: "50%",
-    display: "grid",
-    placeItems: "center",
-    margin: "0 auto 22px",
-    background: "#37e8ff",
-    color: "#001014",
-    fontSize: "28px",
-    fontWeight: 900,
-  },
-
-  modalTitle: {
-    fontSize: "30px",
-  },
-
-  modalPrice: {
-    fontSize: "55px",
-    fontWeight: 900,
-    color: "#42eaff",
-  },
-
-  modalText: {
-    color: "#8fa3af",
-    lineHeight: 1.6,
-  },
-
-  disabled: {
-    width: "100%",
-    marginTop: "15px",
-    padding: "16px",
-    border: "1px solid #24404b",
-    borderRadius: "10px",
-    background: "#0d1b22",
-    color: "#77909c",
-    fontWeight: 800,
-  },
-};
+function Step({
+  n,
+  title,
+  text,
+}: {
+  n: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="step">
+      <div className="stepNum">{n}</div>
+      <h3>{title}</h3>
+      <p>{text}</p>
+    </div>
+  );
+}
