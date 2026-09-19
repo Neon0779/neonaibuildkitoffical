@@ -55,10 +55,45 @@ export default function Home() {
         description: "NEON AI Build Kit",
         order_id: order.id,
 
-        handler: function () {
-          setMessage(
-            "Test payment received. Secure payment verification is the next activation step."
-          );
+        handler: async function (paymentResponse: any) {
+          try {
+            setLoading(true);
+            setMessage("Verifying payment...");
+
+            const verifyResponse = await fetch("/api/razorpay/verify", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                razorpay_order_id: paymentResponse.razorpay_order_id,
+                razorpay_payment_id: paymentResponse.razorpay_payment_id,
+                razorpay_signature: paymentResponse.razorpay_signature,
+              }),
+            });
+
+            const verification = await verifyResponse.json();
+
+            if (!verifyResponse.ok || !verification.verified) {
+              throw new Error(
+                verification.error || "Payment verification failed."
+              );
+            }
+
+            setMessage(
+              "Payment verified successfully. NEON AI access is ready for activation."
+            );
+          } catch (error) {
+            console.error(error);
+
+            setMessage(
+              error instanceof Error
+                ? error.message
+                : "Payment verification failed. Access was not unlocked."
+            );
+          } finally {
+            setLoading(false);
+          }
         },
 
         theme: {
@@ -81,11 +116,13 @@ export default function Home() {
       setLoading(false);
     } catch (error) {
       console.error(error);
+
       setMessage(
         error instanceof Error
           ? error.message
           : "Unable to start payment. Please try again."
       );
+
       setLoading(false);
     }
   }
@@ -96,6 +133,7 @@ export default function Home() {
         <div className="logo">
           NEON <span>LABS</span>
         </div>
+
         <div className="navBadge">ANDROID AI BUILD KIT</div>
       </nav>
 
@@ -141,6 +179,7 @@ export default function Home() {
 
       <section className="section" id="features">
         <div className="eyebrow">YOUR ASSISTANT. YOUR RULES.</div>
+
         <h2>One kit. Your own AI identity.</h2>
 
         <p className="sectionIntro">
@@ -154,26 +193,31 @@ export default function Home() {
             title="Custom Assistant"
             text="Choose your own assistant name, personality and conversation style."
           />
+
           <Card
             icon="◉"
             title="Voice Preference"
             text="Choose female, male or no preference depending on the voice provider you use."
           />
+
           <Card
             icon="⌁"
             title="Android + Termux"
             text="Follow exact commands and checkpoints while building directly with your Android workflow."
           />
+
           <Card
             icon="◆"
             title="Master Prompt"
             text="Start a structured AI-guided build workflow instead of relying on random coding instructions."
           />
+
           <Card
             icon="✓"
             title="Stage Verification"
             text="Verify each build stage before moving forward so errors can be fixed early."
           />
+
           <Card
             icon="⚙"
             title="Future Ready"
@@ -184,31 +228,62 @@ export default function Home() {
 
       <section className="workflow">
         <div className="eyebrow">HOW IT WORKS</div>
+
         <h2>From idea to your Android AI assistant.</h2>
 
         <div className="steps">
-          <Step n="01" title="Get the Kit" text="Start with the ₹99 launch-access checkout." />
-          <Step n="02" title="Personalize" text="Choose your assistant name, personality, voice, theme and language." />
-          <Step n="03" title="Use the Master Prompt" text="Paste your personalized prompt into a capable coding AI." />
-          <Step n="04" title="Build Stage-by-Stage" text="Follow Termux commands, verification checkpoints and troubleshooting." />
+          <Step
+            n="01"
+            title="Get the Kit"
+            text="Start with the ₹99 launch-access checkout."
+          />
+
+          <Step
+            n="02"
+            title="Personalize"
+            text="Choose your assistant name, personality, voice, theme and language."
+          />
+
+          <Step
+            n="03"
+            title="Use the Master Prompt"
+            text="Paste your personalized prompt into a capable coding AI."
+          />
+
+          <Step
+            n="04"
+            title="Build Stage-by-Stage"
+            text="Follow Termux commands, verification checkpoints and troubleshooting."
+          />
         </div>
       </section>
 
       <section className="cta">
         <div>
           <div className="eyebrow">LAUNCH ACCESS</div>
+
           <h2>Build something that is yours.</h2>
-          <p>Start the NEON AI guided Android assistant build workflow.</p>
+
+          <p>
+            Start the NEON AI guided Android assistant build workflow.
+          </p>
         </div>
 
-        <button className="buy big" onClick={startPayment} disabled={loading}>
+        <button
+          className="buy big"
+          onClick={startPayment}
+          disabled={loading}
+        >
           {loading ? "STARTING..." : "GET ACCESS — ₹99"}
         </button>
       </section>
 
       <footer>
         <div>© 2026 NEON LABS</div>
-        <div>Build AI • Build Apps • Build the Future</div>
+
+        <div>
+          Build AI • Build Apps • Build the Future
+        </div>
       </footer>
 
       <style jsx>{`
@@ -219,27 +294,50 @@ export default function Home() {
         .page {
           min-height: 100vh;
           background:
-            radial-gradient(circle at 50% 15%, rgba(26, 179, 255, 0.12), transparent 32%),
-            radial-gradient(circle at 80% 55%, rgba(80, 55, 255, 0.08), transparent 30%),
+            radial-gradient(
+              circle at 50% 15%,
+              rgba(26, 179, 255, 0.12),
+              transparent 32%
+            ),
+            radial-gradient(
+              circle at 80% 55%,
+              rgba(80, 55, 255, 0.08),
+              transparent 30%
+            ),
             #02070b;
+
           color: #f4fbff;
-          font-family: Arial, Helvetica, sans-serif;
+
+          font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
+
           overflow: hidden;
         }
 
         nav {
           width: min(1180px, calc(100% - 40px));
+
           margin: auto;
+
           height: 82px;
+
           display: flex;
+
           align-items: center;
+
           justify-content: space-between;
-          border-bottom: 1px solid rgba(121, 220, 255, 0.12);
+
+          border-bottom:
+            1px solid rgba(121, 220, 255, 0.12);
         }
 
         .logo {
           font-weight: 900;
+
           letter-spacing: 4px;
+
           font-size: 14px;
         }
 
@@ -251,132 +349,228 @@ export default function Home() {
         .navBadge,
         .eyebrow {
           color: #8aa1ae;
+
           letter-spacing: 2px;
+
           font-size: 10px;
+
           font-weight: 800;
         }
 
         .hero {
           width: min(1050px, calc(100% - 36px));
+
           margin: auto;
+
           padding: 90px 0 55px;
+
           text-align: center;
+
           position: relative;
         }
 
         .offer {
           display: inline-block;
+
           padding: 9px 16px;
-          border: 1px solid rgba(61, 220, 255, 0.28);
+
+          border:
+            1px solid rgba(61, 220, 255, 0.28);
+
           border-radius: 100px;
+
           color: #6ee8ff;
-          background: rgba(61, 220, 255, 0.06);
+
+          background:
+            rgba(61, 220, 255, 0.06);
+
           font-size: 11px;
+
           letter-spacing: 1.5px;
+
           font-weight: 800;
         }
 
         h1 {
           margin: 30px auto 20px;
-          font-size: clamp(42px, 8vw, 82px);
+
+          font-size:
+            clamp(42px, 8vw, 82px);
+
           line-height: 0.98;
+
           letter-spacing: -3px;
+
           font-weight: 950;
         }
 
         .subtitle {
           width: min(720px, 100%);
+
           margin: 0 auto;
+
           color: #93a4ae;
+
           line-height: 1.8;
+
           font-size: 15px;
         }
 
         .actions {
           display: flex;
+
           justify-content: center;
+
           gap: 12px;
+
           flex-wrap: wrap;
+
           margin-top: 32px;
         }
 
         button,
         .secondary {
           border: 0;
+
           border-radius: 8px;
+
           min-height: 50px;
+
           padding: 0 24px;
+
           font-weight: 900;
+
           font-size: 12px;
+
           letter-spacing: 0.4px;
+
           cursor: pointer;
+
           text-decoration: none;
+
           display: inline-flex;
+
           align-items: center;
+
           justify-content: center;
         }
 
         .buy {
           color: #001015;
-          background: linear-gradient(135deg, #6cecff, #24c9f4);
-          box-shadow: 0 0 34px rgba(52, 215, 255, 0.2);
+
+          background:
+            linear-gradient(
+              135deg,
+              #6cecff,
+              #24c9f4
+            );
+
+          box-shadow:
+            0 0 34px
+            rgba(52, 215, 255, 0.2);
         }
 
         .buy:disabled {
           opacity: 0.6;
+
           cursor: wait;
         }
 
         .secondary {
           color: #c8d8df;
-          border: 1px solid #18303a;
+
+          border:
+            1px solid #18303a;
+
           background: #071016;
         }
 
         .mini {
           margin-top: 17px;
+
           color: #536771;
+
           font-size: 10px;
         }
 
         .message {
           width: min(620px, 100%);
+
           margin: 22px auto 0;
+
           padding: 14px 18px;
-          border: 1px solid rgba(61, 220, 255, 0.22);
+
+          border:
+            1px solid rgba(61, 220, 255, 0.22);
+
           border-radius: 10px;
-          background: rgba(61, 220, 255, 0.06);
+
+          background:
+            rgba(61, 220, 255, 0.06);
+
           color: #a9edf8;
+
           font-size: 13px;
+
           line-height: 1.6;
         }
 
         .core {
           width: 150px;
+
           height: 150px;
+
           margin: 70px auto 0;
+
           padding: 1px;
+
           border-radius: 50%;
-          background: linear-gradient(135deg, #38e4ff, #315bff, #9d3cff);
-          box-shadow: 0 0 65px rgba(47, 205, 255, 0.25);
+
+          background:
+            linear-gradient(
+              135deg,
+              #38e4ff,
+              #315bff,
+              #9d3cff
+            );
+
+          box-shadow:
+            0 0 65px
+            rgba(47, 205, 255, 0.25);
         }
 
         .coreInner {
           width: 100%;
+
           height: 100%;
+
           border-radius: 50%;
+
           display: grid;
+
           place-items: center;
-          background: radial-gradient(circle, #102b39, #03090d 68%);
+
+          background:
+            radial-gradient(
+              circle,
+              #102b39,
+              #03090d 68%
+            );
+
           font-size: 48px;
+
           font-weight: 900;
+
           color: #63e9ff;
         }
 
         .section,
         .workflow {
-          width: min(1120px, calc(100% - 36px));
+          width:
+            min(1120px, calc(100% - 36px));
+
           margin: auto;
+
           padding: 100px 0;
         }
 
@@ -384,38 +578,59 @@ export default function Home() {
         .workflow h2,
         .cta h2 {
           margin: 12px 0;
-          font-size: clamp(32px, 5vw, 54px);
+
+          font-size:
+            clamp(32px, 5vw, 54px);
+
           letter-spacing: -2px;
         }
 
         .sectionIntro {
           max-width: 700px;
+
           color: #7f929d;
+
           line-height: 1.8;
         }
 
         .grid {
           margin-top: 45px;
+
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+
+          grid-template-columns:
+            repeat(3, 1fr);
+
           gap: 14px;
         }
 
         .card {
           min-height: 205px;
+
           padding: 28px;
-          border: 1px solid #102832;
+
+          border:
+            1px solid #102832;
+
           border-radius: 16px;
-          background: linear-gradient(145deg, rgba(10, 24, 31, 0.9), rgba(4, 10, 14, 0.92));
+
+          background:
+            linear-gradient(
+              145deg,
+              rgba(10, 24, 31, 0.9),
+              rgba(4, 10, 14, 0.92)
+            );
         }
 
         .cardIcon {
           font-size: 25px;
+
           color: #4be1ff;
         }
 
         .card h3 {
           margin: 22px 0 10px;
+
           font-size: 18px;
         }
 
@@ -423,29 +638,40 @@ export default function Home() {
         .step p,
         .cta p {
           color: #81949e;
+
           line-height: 1.7;
+
           font-size: 13px;
         }
 
         .workflow {
-          border-top: 1px solid #0d2028;
+          border-top:
+            1px solid #0d2028;
         }
 
         .steps {
           margin-top: 45px;
+
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+
+          grid-template-columns:
+            repeat(4, 1fr);
+
           gap: 12px;
         }
 
         .step {
           padding: 26px 22px;
-          border-left: 1px solid #1c4655;
+
+          border-left:
+            1px solid #1c4655;
         }
 
         .stepNum {
           color: #41dcff;
+
           font-weight: 900;
+
           font-size: 12px;
         }
 
@@ -454,17 +680,34 @@ export default function Home() {
         }
 
         .cta {
-          width: min(1120px, calc(100% - 36px));
-          margin: 30px auto 90px;
+          width:
+            min(1120px, calc(100% - 36px));
+
+          margin:
+            30px auto 90px;
+
           padding: 50px;
+
           display: flex;
+
           align-items: center;
-          justify-content: space-between;
+
+          justify-content:
+            space-between;
+
           gap: 30px;
-          border: 1px solid #153540;
+
+          border:
+            1px solid #153540;
+
           border-radius: 22px;
+
           background:
-            radial-gradient(circle at 90% 50%, rgba(44, 208, 255, 0.12), transparent 35%),
+            radial-gradient(
+              circle at 90% 50%,
+              rgba(44, 208, 255, 0.12),
+              transparent 35%
+            ),
             #061016;
         }
 
@@ -473,14 +716,26 @@ export default function Home() {
         }
 
         footer {
-          width: min(1120px, calc(100% - 36px));
+          width:
+            min(1120px, calc(100% - 36px));
+
           margin: auto;
-          padding: 28px 0 45px;
-          border-top: 1px solid #10232b;
+
+          padding:
+            28px 0 45px;
+
+          border-top:
+            1px solid #10232b;
+
           display: flex;
-          justify-content: space-between;
+
+          justify-content:
+            space-between;
+
           gap: 20px;
+
           color: #52646d;
+
           font-size: 11px;
         }
 
@@ -511,7 +766,9 @@ export default function Home() {
 
           .cta {
             padding: 30px 22px;
+
             flex-direction: column;
+
             align-items: flex-start;
           }
 
@@ -540,7 +797,9 @@ function Card({
   return (
     <div className="card">
       <div className="cardIcon">{icon}</div>
+
       <h3>{title}</h3>
+
       <p>{text}</p>
     </div>
   );
@@ -558,7 +817,9 @@ function Step({
   return (
     <div className="step">
       <div className="stepNum">{n}</div>
+
       <h3>{title}</h3>
+
       <p>{text}</p>
     </div>
   );
