@@ -11,6 +11,8 @@ declare global {
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
 
   const loadRazorpay = () =>
     new Promise<boolean>((resolve) => {
@@ -39,6 +41,13 @@ export default function Home() {
 
       const response = await fetch("/api/razorpay/order", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          phone,
+        }),
       });
 
       const order = await response.json();
@@ -81,8 +90,10 @@ export default function Home() {
             }
 
             setMessage(
-              "Payment verified successfully. NEON AI access is ready for activation."
+              "Payment verified successfully. Opening your NEON dashboard..."
             );
+
+            window.location.href = verification.redirect || "/buyer";
           } catch (error) {
             console.error(error);
 
@@ -151,6 +162,30 @@ export default function Home() {
           Choose its name, personality, voice, theme and language — then follow
           the guided build workflow.
         </p>
+
+        <div className="identityBox">
+          <p className="identityTitle">BUYER ACCESS DETAILS</p>
+
+          <div className="identityGrid">
+            <input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+
+            <input
+              type="tel"
+              placeholder="Mobile number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
+          </div>
+
+          <p className="identityHint">
+            Enter at least one valid email or mobile number for your secure buyer access.
+          </p>
+        </div>
 
         <div className="actions">
           <button
@@ -384,6 +419,52 @@ export default function Home() {
           color: #93a4ae;
           line-height: 1.8;
           font-size: 15px;
+        }
+
+        .identityBox {
+          width: min(620px, 100%);
+          margin: 30px auto 0;
+          padding: 18px;
+          border: 1px solid rgba(61, 220, 255, 0.16);
+          border-radius: 14px;
+          background: rgba(5, 16, 22, 0.8);
+        }
+
+        .identityTitle {
+          margin: 0 0 12px;
+          color: #63e9ff;
+          font-size: 10px;
+          font-weight: 900;
+          letter-spacing: 1.6px;
+        }
+
+        .identityGrid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+
+        .identityGrid input {
+          width: 100%;
+          min-height: 46px;
+          padding: 0 14px;
+          border: 1px solid #17313b;
+          border-radius: 9px;
+          outline: none;
+          background: #030b0f;
+          color: #f4fbff;
+          font-size: 13px;
+        }
+
+        .identityGrid input:focus {
+          border-color: #39dfff;
+        }
+
+        .identityHint {
+          margin: 10px 0 0;
+          color: #607680;
+          font-size: 10px;
+          line-height: 1.5;
         }
 
         .actions {
@@ -625,6 +706,10 @@ export default function Home() {
 
           h1 {
             letter-spacing: -2px;
+          }
+
+          .identityGrid {
+            grid-template-columns: 1fr;
           }
 
           .grid {

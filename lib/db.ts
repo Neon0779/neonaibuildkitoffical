@@ -10,7 +10,13 @@ function getDatabaseUrl() {
   return url;
 }
 
-export const sql = neon(getDatabaseUrl());
+export function sql(
+  strings: TemplateStringsArray,
+  ...values: any[]
+) {
+  const client = neon(getDatabaseUrl());
+  return client(strings, ...values);
+}
 
 export async function initializeDatabase() {
   await sql`
